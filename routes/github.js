@@ -33,7 +33,10 @@ router.get("/repos/:user/:repo/pulls/:pr/reviews/status", async (req, res) => {
     `https://api.github.com/repos/${user}/${repo}/pulls/${pr}`
   );
   if (!dataResponse.ok)
-    return res.send(`Error from github api: ${await dataResponse.json()}`);
+    return res.send({
+      status: "error",
+      error: JSON.stringify(await dataResponse.json()),
+    });
 
   const {
     user: { id: prAuthor },
@@ -41,14 +44,17 @@ router.get("/repos/:user/:repo/pulls/:pr/reviews/status", async (req, res) => {
   } = await dataResponse.json();
 
   if (isAssociated(prAuthorAssociation)) {
-    return res.send(PR_STATUS.APPROVED);
+    return res.send({ status: PR_STATUS.APPROVED });
   }
 
   dataResponse = await fetch(
     `https://api.github.com/repos/${user}/${repo}/pulls/${pr}/reviews`
   );
   if (!dataResponse.ok)
-    return res.send(`Error from github api: ${await dataResponse.json()}`);
+    return res.send({
+      status: "error",
+      error: JSON.stringify(await dataResponse.json()),
+    });
 
   const body = await dataResponse.json();
 
@@ -68,7 +74,9 @@ router.get("/repos/:user/:repo/pulls/:pr/reviews/status", async (req, res) => {
     );
 
   if (reviews.length < 1) {
-    return res.send(PR_STATUS.NO_REVIEWS);
+    return res.send({
+      status: PR_STATUS.NO_REVIEWS,
+    });
   }
 
   for (const review of reviews) {
@@ -77,10 +85,10 @@ router.get("/repos/:user/:repo/pulls/:pr/reviews/status", async (req, res) => {
 
   for (const userReview of Object.values(userReviews)) {
     if (userReview === PR_STATUS.CHANGES_REQUESTED)
-      return res.send(PR_STATUS.CHANGES_REQUESTED);
+      return res.send({ status: PR_STATUS.CHANGES_REQUESTED });
   }
 
-  return res.send(PR_STATUS.APPROVED);
+  return res.send({ status: PR_STATUS.APPROVED });
 });
 
 module.exports = router;
